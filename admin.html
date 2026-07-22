@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — ระบบประเมินกิจกรรม รพ.ปทุมธานี</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3F5F4;--surface:#FFFFFF;--surface-2:#F7FAF8;--ink:#16261F;--ink-soft:#5B6F68;--ink-faint:#93A39D;
+    --primary:#13876E;--primary-deep:#0C5E4D;--primary-soft:#DCEEE8;--line:#E1E9E5;
+    --warn:#C2542F;--warn-soft:#FCE5DC;--good:#1E9E7E;
+    --shadow:0 1px 2px rgba(16,38,31,.05),0 4px 16px rgba(16,38,31,.06);
+    --radius:12px;--sidebar-w:220px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'IBM Plex Sans Thai',sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .mono{font-family:'IBM Plex Mono',monospace;font-feature-settings:"tnum"}
+  button,input,select,textarea{font-family:inherit;font-size:14px}
+  input,select,textarea{border:1.5px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;color:var(--ink);outline:none}
+  input:focus,select:focus,textarea:focus{border-color:var(--primary)}
+  button{cursor:pointer}
+
+  #gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100}
+  .gate-card{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:32px 28px}
+  .gate-badge{width:48px;height:48px;border-radius:12px;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;font-size:18px;margin-bottom:16px}
+  .gate-card h1{font-size:19px;font-weight:600;margin-bottom:6px}
+  .gate-card p{font-size:13px;color:var(--ink-soft);margin-bottom:20px}
+  .gate-card input{width:100%;margin-bottom:12px}
+  .gate-card button{width:100%;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:11px;font-weight:600}
+  .gate-err{color:var(--warn);font-size:12.5px;margin-top:8px;min-height:16px}
+
+  #app{display:none}
+  .shell{display:flex;min-height:100vh}
+  .sidebar{width:var(--sidebar-w);flex-shrink:0;background:var(--surface);border-right:1px solid var(--line);padding:20px 0;position:fixed;top:0;bottom:0;overflow-y:auto}
+  .brand{padding:0 20px 18px;border-bottom:1px solid var(--line);margin-bottom:10px}
+  .brand b{font-size:14.5px;display:block}
+  .brand span{font-size:11.5px;color:var(--ink-faint)}
+  .navitem{display:flex;align-items:center;gap:10px;padding:10px 20px;font-size:13.5px;color:var(--ink-soft);cursor:pointer;border-left:3px solid transparent}
+  .navitem:hover{background:var(--surface-2)}
+  .navitem.on{color:var(--primary-deep);font-weight:600;border-left-color:var(--primary);background:var(--primary-soft)}
+  .navitem .n{width:20px;text-align:center;font-size:12px;color:var(--ink-faint)}
+  .navitem.on .n{color:var(--primary)}
+  .main{margin-left:var(--sidebar-w);flex:1;padding:28px 36px;max-width:1100px}
+  .pagehead{margin-bottom:22px}
+  .pagehead h1{font-size:21px;font-weight:600}
+  .pagehead p{font-size:13.5px;color:var(--ink-soft);margin-top:3px}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:18px}
+  .card h2{font-size:15px;font-weight:600;margin-bottom:14px}
+  .row-flex{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+  .field{display:flex;flex-direction:column;gap:4px}
+  .field label{font-size:11.5px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em}
+  .btn{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:600;font-size:13.5px}
+  .btn.ghost{background:var(--surface-2);color:var(--ink-soft)}
+  .btn.danger{background:var(--warn-soft);color:var(--warn)}
+  .btn.small{padding:5px 10px;font-size:12px}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);padding:8px 10px;border-bottom:1.5px solid var(--line)}
+  td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  td input,td select{width:100%;padding:6px 8px;font-size:13px}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px}
+  .pill.on{background:var(--primary-soft);color:var(--primary-deep)}
+  .pill.off{background:#EDEEEE;color:var(--ink-faint)}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;font-weight:500;opacity:0;pointer-events:none;transition:.25s;z-index:200;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.err{background:var(--warn)}
+  .mut{color:var(--ink-faint);font-size:12.5px}
+  .divider{height:1px;background:var(--line);margin:16px 0}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:6px}
+  .stat{background:var(--surface-2);border-radius:10px;padding:14px}
+  .stat b{font-size:24px;display:block;font-family:'IBM Plex Mono'}
+  .stat span{font-size:12px;color:var(--ink-soft)}
+  .loading{text-align:center;color:var(--ink-faint);padding:30px;font-size:13.5px}
+  .activity-block{border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:12px}
+  .activity-block .ahead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .activity-block .ahead b{font-size:14px}
+  .crit-row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+  .crit-row input{flex:1}
+  .crit-row .idx{width:22px;text-align:center;color:var(--ink-faint);font-size:12px;flex-shrink:0}
+  .track-block{border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+  .track-block .theadrow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .milestone-row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+  .milestone-row input{flex:1}
+  .checkline{display:flex;align-items:center;gap:6px;font-size:13px}
+  .checkline input{width:auto}
+  #toast-box{position:fixed;inset:0;pointer-events:none;z-index:200}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:#CBD8D3;border-radius:4px}
+  @media (max-width:860px){
+    .sidebar{position:static;width:100%;height:auto;border-right:none;border-bottom:1px solid var(--line)}
+    .main{margin-left:0;padding:20px}
+    .shell{flex-direction:column}
+  }
+</style>
+</head>
+<body>
+
+  <div id="gate">
+    <div class="gate-card">
+      <div class="gate-badge">A</div>
+      <h1>เข้าสู่ระบบ Admin</h1>
+      <p>ใส่รหัสผ่านเพื่อจัดการระบบประเมินกิจกรรม</p>
+      <input type="password" id="pw" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()">
+      <button onclick="doLogin()">เข้าสู่ระบบ</button>
+      <div class="gate-err" id="gateErr"></div>
+    </div>
+  </div>
+
+  <div id="app">
+    <div class="shell">
+      <div class="sidebar">
+        <div class="brand"><b>Admin Console</b><span>ระบบประเมินกิจกรรม รพ.ปทุมธานี</span></div>
+        <div class="navitem on" data-p="overview" onclick="go('overview')"><span class="n">◆</span> ภาพรวม</div>
+        <div class="navitem" data-p="residents" onclick="go('residents')"><span class="n">1</span> แพทย์ประจำบ้าน</div>
+        <div class="navitem" data-p="faculty" onclick="go('faculty')"><span class="n">2</span> อาจารย์</div>
+        <div class="navitem" data-p="criteria" onclick="go('criteria')"><span class="n">3</span> เกณฑ์การประเมิน</div>
+        <div class="navitem" data-p="activities" onclick="go('activities')"><span class="n">4</span> รายชื่อกิจกรรม</div>
+        <div class="navitem" data-p="tracks" onclick="go('tracks')"><span class="n">5</span> Schedule รายสัปดาห์</div>
+        <div class="navitem" data-p="progress" onclick="go('progress')"><span class="n">6</span> Progress Milestones</div>
+        <div class="navitem" data-p="stats" onclick="go('stats')"><span class="n">7</span> สถิติ/ข้อมูลดิบ</div>
+        <div class="navitem" data-p="danger" onclick="go('danger')"><span class="n">8</span> ล้างข้อมูลทดสอบ</div>
+      </div>
+      <div class="main" id="main"></div>
+    </div>
+  </div>
+
+  <div id="toast-box"><div class="toast" id="toast"></div></div>
+
+<script>
+/* ===================== แก้ค่านี้ — ใช้ API เดียวกับ liff-index.html ===================== */
+const API = 'https://script.google.com/macros/s/AKfycbwM5gNNA68y5b8Yx_E-uFFey9-YNkZ6zRxMTfQylxIJnKwihz-DADGkEWR-4mooTzBMgA/exec';
+/* ======================================================================================= */
+
+let PW='';
+let DATA=null;
+
+function toast(msg,isErr){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(isErr?' err':'');
+  setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+function apiGet(action,params){
+  params=params||{};
+  const qs=Object.keys(params).map(k=>encodeURIComponent(k)+'='+encodeURIComponent(params[k])).join('&');
+  return fetch(API+'?action='+action+(qs?'&'+qs:'')).then(r=>r.json());
+}
+function apiPost(body){
+  return fetch(API,{method:'POST',body:JSON.stringify(body)}).then(r=>r.json());
+}
+function adminGet(action,extra){
+  const p=Object.assign({password:PW},extra||{});
+  return apiGet(action,p);
+}
+function adminPost(action,extra){
+  const p=Object.assign({action:action,password:PW},extra||{});
+  return apiPost(p);
+}
+
+function doLogin(){
+  const pw=document.getElementById('pw').value;
+  if(!pw){ document.getElementById('gateErr').textContent='ใส่รหัสผ่านก่อนนะ'; return; }
+  PW=pw;
+  document.getElementById('gateErr').textContent='กำลังตรวจสอบ…';
+  adminGet('adminGetAll').then(d=>{
+    if(d && d.ok===false){ document.getElementById('gateErr').textContent='รหัสผ่านไม่ถูกต้อง'; PW=''; return; }
+    DATA=d;
+    document.getElementById('gate').style.display='none';
+    document.getElementById('app').style.display='block';
+    go('overview');
+  }).catch(()=>{ document.getElementById('gateErr').textContent='เชื่อมต่อไม่สำเร็จ ลองใหม่'; });
+}
+
+function refreshData(){ return adminGet('adminGetAll').then(d=>{ DATA=d; }); }
+
+let CURRENT_PAGE='overview';
+function go(page){
+  CURRENT_PAGE=page;
+  document.querySelectorAll('.navitem').forEach(el=>el.classList.toggle('on', el.dataset.p===page));
+  const renderers={
+    overview: renderOverview, residents: renderResidents, faculty: renderFaculty,
+    criteria: renderCriteria, activities: renderActivities, tracks: renderSchedule,
+    progress: renderTracks, stats: renderStats, danger: renderDanger
+  };
+  (renderers[page]||renderOverview)();
+}
+
+function renderOverview(){
+  const s=DATA.stats||{};
+  document.getElementById('main').innerHTML=`
+    <div class="pagehead"><h1>ภาพรวมระบบ</h1><p>สรุปสถานะปัจจุบันของระบบประเมินกิจกรรม</p></div>
+    <div class="stat-grid">
+      <div class="stat"><b class="mono">${s.totalResidents||0}</b><span>แพทย์ประจำบ้านที่ใช้งาน</span></div>
+      <div class="stat"><b class="mono">${(DATA.faculty||[]).filter(f=>f.active).length}</b><span>อาจารย์ที่มีสิทธิ์</span></div>
+      <div class="stat"><b class="mono">${s.totalResponses||0}</b><span>การประเมินทั้งหมด</span></div>
+      <div class="stat"><b class="mono">${s.totalMembers||0}</b><span>คนที่ลงทะเบียนในระบบ</span></div>
+    </div>
+    <div class="card">
+      <h2>ทางลัด</h2>
+      <div class="row-flex">
+        <button class="btn ghost" onclick="go('residents')">+ เพิ่มแพทย์ประจำบ้าน</button>
+        <button class="btn ghost" onclick="go('faculty')">+ เพิ่มอาจารย์</button>
+        <button class="btn ghost" onclick="go('tracks')">+ กรอกตารางกิจกรรมสัปดาห์นี้</button>
+      </div>
+    </div>
+    ${(s.neverEvaluated&&s.neverEvaluated.length)?`
+    <div class="card">
+      <h2>แพทย์ประจำบ้านที่ยังไม่เคยถูกประเมินเลย</h2>
+      <p class="mut" style="margin-bottom:8px">${s.neverEvaluated.length} คน</p>
+      <p>${s.neverEvaluated.join(', ')}</p>
+    </div>`:''}
+  `;
+}
+
+function renderResidents(){
+  const list=DATA.residents||[];
+  const currentYearBE = (()=>{ const d=new Date(); const by=d.getFullYear()+543; return d.getMonth()+1>=7?by:by-1; })();
+  let rows=list.map(r=>{
+    const yearsIn=currentYearBE - r.entryYear + 1;
+    const label = yearsIn<1?'ยังไม่เข้าศึกษา': yearsIn>3?('ศิษย์เก่ารุ่น '+(r.entryYear-2566)) : ('R'+yearsIn);
+    return `<tr data-row="${r.row}">
+      <td><input value="${escAttr(r.name)}" class="f-name"></td>
+      <td><input type="number" value="${r.entryYear}" class="f-entryyear" style="width:90px"></td>
+      <td><span class="mut mono">${label}</span></td>
+      <td><label class="checkline"><input type="checkbox" ${r.active?'checked':''} class="f-active"> ใช้งาน</label></td>
+      <td>
+        <button class="btn small" onclick="saveResidentRow(${r.row})">บันทึก</button>
+        <button class="btn small danger" onclick="deleteResidentRow(${r.row},'${escJs(r.name)}')">ลบ</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('main').innerHTML=`
+    <div class="pagehead"><h1>แพทย์ประจำบ้าน</h1><p>เพิ่ม/ลบ/แก้ชื่อและปีที่เข้าศึกษา — ชั้นปีคำนวณอัตโนมัติจาก entryYear (เลื่อนชั้นทุก 1 ก.ค.)</p></div>
+    <div class="card">
+      <h2>รายชื่อทั้งหมด (${list.length} คน)</h2>
+      <table>
+        <thead><tr><th style="width:32%">ชื่อ</th><th>Entry Year (พ.ศ.)</th><th>ชั้นปีปัจจุบัน</th><th>สถานะ</th><th></th></tr></thead>
+        <tbody id="resTbody">${rows||'<tr><td colspan="5" class="mut">ยังไม่มีข้อมูล</td></tr>'}</tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2>เพิ่มแพทย์ประจำบ้านใหม่</h2>
+      <div class="row-flex">
+        <div class="field"><label>ชื่อ</label><input id="newResName" placeholder="เช่น นพ.สมชาย ใจดี" style="width:260px"></div>
+        <div class="field"><label>Entry Year (พ.ศ.)</label><input id="newResYear" type="number" value="${currentYearBE}" style="width:110px"></div>
+        <button class="btn" onclick="addResident()">+ เพิ่ม</button>
+      </div>
+      <p class="mut" style="margin-top:10px">เพิ่มรุ่นใหม่: ใส่ entryYear เป็นปีปัจจุบัน ระบบจะขึ้น R1 ให้เองอัตโนมัติ</p>
+    </div>
+  `;
+}
+function saveResidentRow(row){
+  const tr=document.querySelector('#resTbody tr[data-row="'+row+'"]');
+  const name=tr.querySelector('.f-name').value.trim();
+  const entryYear=tr.querySelector('.f-entryyear').value;
+  const active=tr.querySelector('.f-active').checked;
+  if(!name||!entryYear){ toast('กรอกชื่อและปีให้ครบ',true); return; }
+  adminPost('adminSaveResident',{row:row,name:name,entryYear:entryYear,active:active}).then(d=>{
+    if(d.ok){ toast('บันทึกแล้ว ✓'); refreshData().then(renderResidents); } else toast(d.error||'บันทึกไม่สำเร็จ',true);
+  });
+}
+function deleteResidentRow(row,name){
+  if(!confirm('ลบ "'+name+'" ออกจากระบบ?\nข้อมูลการประเมินเก่าที่มีอยู่แล้วจะไม่หาย แต่จะเลือกชื่อนี้ในฟอร์มใหม่ไม่ได้อีก')) return;
+  adminPost('adminDeleteResident',{row:row}).then(d=>{
+    if(d.ok){ toast('ลบแล้ว ✓'); refreshData().then(renderResidents); } else toast(d.error||'ลบไม่สำเร็จ',true);
+  });
+}
+function addResident(){
+  const name=document.getElementById('newResName').value.trim();
+  const entryYear=document.getElementById('newResYear').value;
+  if(!name||!entryYear){ toast('กรอกชื่อและปีให้ครบ',true); return; }
+  adminPost('adminSaveResident',{name:name,entryYear:entryYear,active:true}).then(d=>{
+    if(d.ok){ toast('เพิ่มแล้ว ✓'); refreshData().then(renderResidents); } else toast(d.error||'เพิ่มไม่สำเร็จ',true);
+  });
+}
+
+function renderFaculty(){
+  const list=DATA.faculty||[];
+  let rows=list.map(f=>`<tr data-row="${f.row}">
+      <td><input value="${escAttr(f.name)}" class="f-name" style="width:180px"></td>
+      <td><input value="${escAttr(f.nickname)}" class="f-nick" style="width:80px"></td>
+      <td><input value="${escAttr(f.lineId)}" class="f-lineid" style="width:110px"></td>
+      <td><input value="${escAttr(f.userId)}" class="f-userid mono" style="width:220px" placeholder="ยังไม่มี userId"></td>
+      <td><label class="checkline"><input type="checkbox" ${f.active?'checked':''} class="f-active"> เปิดสิทธิ์</label></td>
+      <td>
+        <button class="btn small" onclick="saveFacultyRow(${f.row})">บันทึก</button>
+        <button class="btn small danger" onclick="deleteFacultyRow(${f.row},'${escJs(f.name)}')">ลบ</button>
+      </td>
+    </tr>`).join('');
+
+  document.getElementById('main').innerHTML=`
+    <div class="pagehead"><h1>อาจารย์</h1><p>เพิ่ม/ลบอาจารย์ + userId สำหรับเปิดสิทธิ์ดูหน้าภาพรวม — วิธีหา userId: ให้อาจารย์เปิด <span class="mono">faculty-register.html</span> แล้วก๊อปมาใส่ที่นี่</p></div>
+    <div class="card">
+      <h2>รายชื่ออาจารย์ทั้งหมด (${list.length} คน)</h2>
+      <table>
+        <thead><tr><th>ชื่อ</th><th>ฉายา</th><th>LINE ID</th><th>User ID (สิทธิ์เข้าระบบ)</th><th>สถานะ</th><th></th></tr></thead>
+        <tbody id="facTbody">${rows||'<tr><td colspan="6" class="mut">ยังไม่มีข้อมูล</td></tr>'}</tbody>
+      </table>
+      <p class="mut" style="margin-top:10px">ถ้าช่อง User ID ว่าง อาจารย์ท่านนั้นจะยังเข้าหน้า "ภาพรวม" ไม่ได้ — ต้องกรอกให้ครบก่อน</p>
+    </div>
+    <div class="card">
+      <h2>เพิ่มอาจารย์ใหม่</h2>
+      <div class="row-flex">
+        <div class="field"><label>ชื่อ</label><input id="newFacName" placeholder="เช่น พญ.สมหญิง รักดี" style="width:200px"></div>
+        <div class="field"><label>ฉายา</label><input id="newFacNick" placeholder="เช่น อ.หญิง" style="width:100px"></div>
+        <div class="field"><label>LINE ID</label><input id="newFacLineId" placeholder="ชื่อผู้ใช้ LINE" style="width:140px"></div>
+        <div class="field"><label>User ID (ถ้ามี)</label><input id="newFacUserId" placeholder="U... (ใส่ทีหลังได้)" style="width:220px"></div>
+        <button class="btn" onclick="addFaculty()">+ เพิ่ม</button>
+      </div>
+    </div>
+  `;
+}
+function saveFacultyRow(row){
+  const tr=document.querySelector('#facTbody tr[data-row="'+row+'"]');
+  const name=tr.querySelector('.f-name').value.trim();
+  const nickname=tr.querySelector('.f-nick').value.trim();
+  const lineId=tr.querySelector('.f-lineid').value.trim();
+  const userId=tr.querySelector('.f-userid').value.trim();
+  const active=tr.querySelector('.f-active').checked;
+  if(!name){ toast('กรอกชื่อก่อนนะ',true); return; }
+  adminPost('adminSaveFaculty',{row:row,name:name,nickname:nickname,lineId:lineId,userId:userId,active:active}).then(d=>{
+    if(d.ok){ toast('บันทึกแล้ว ✓'); refreshData().then(renderFaculty); } else toast(d.error||'บันทึกไม่สำเร็จ',true);
+  });
+}
+function deleteFacultyRow(row,name){
+  if(!confirm('ลบ "'+name+'" ออกจากระบบ?')) return;
+  adminPost('adminDeleteFaculty',{row:row}).then(d=>{
+    if(d.ok){ toast('ลบแล้ว ✓'); refreshData().then(renderFaculty); } else toast(d.error||'ลบไม่สำเร็จ',true);
+  });
+}
+function addFaculty(){
+  const name=document.getElementById('newFacName').value.trim();
+  const nickname=document.getElementById('newFacNick').value.trim();
+  const lineId=document.getElementById('newFacLineId').value.trim();
+  const userId=document.getElementById('newFacUserId').value.trim();
+  if(!name){ toast('กรอกชื่อก่อนนะ',true); return; }
+  adminPost('adminSaveFaculty',{name:name,nickname:nickname,lineId:lineId,userId:userId,active:true}).then(d=>{
+    if(d.ok){ toast('เพิ่มแล้ว ✓'); refreshData().then(renderFaculty); } else toast(d.error||'เพิ่มไม่สำเร็จ',true);
+  });
+}
+
+function renderCriteria(){
+  const rows=DATA.criteria||[];
+  const byAct={};
+  rows.forEach(c=>{ (byAct[c.activity]=byAct[c.activity]||[]).push(c.criterion); });
+  const acts=Object.keys(byAct);
+
+  let blocks=acts.map(act=>{
+    const items=byAct[act];
+    const critRows=items.map((c,i)=>`<div class="crit-row" data-i="${i}">
+        <span class="idx">${i+1}</span>
+        <input value="${escAttr(c)}" class="critInput">
+        <button class="btn small danger" onclick="removeCritRow(this)">✕</button>
+      </div>`).join('');
+    return `<div class="activity-block" data-act="${escAttr(act)}">
+      <div class="ahead"><b>${act}</b><span class="mut">${items.length} ข้อ</span></div>
+      <div class="critList">${critRows}</div>
+      <button class="btn ghost small" onclick="addCritRow(this)">+ เพิ่มข้อ</button>
+    </div>`;
+  }).join('');
+
+  const cap = DATA.critCapacity || 10;
+  const maxUsed = Math.max(0, ...acts.map(a=>byAct[a].length));
+  document.getElementById('main').innerHTML=`
+    <div class="pagehead"><h1>เกณฑ์การประเมิน</h1><p>แก้ข้อความ/เพิ่ม-ลดข้อของแต่ละกิจกรรม</p></div>
+    <div class="card">
+      <p class="mut" style="margin-bottom:6px">ชีต <span class="mono">Responses</span> รองรับได้ <b>${cap} ข้อ</b> ต่อกิจกรรม (ตอนนี้ใช้มากสุด ${maxUsed} ข้อ)</p>
+      <p class="mut" style="margin-bottom:14px">คำเตือน: ถ้าแก้เกณฑ์ของกิจกรรมที่เคยมีคนประเมินไปแล้ว ข้อมูลเก่าจะยังอยู่ในชีต Responses แต่การสรุปผลจะอ้างอิงเกณฑ์ชุดใหม่ทันที — เปลี่ยนแค่คำปลอดภัยกว่าสลับลำดับหรือลบข้อกลาง</p>
+      <div id="critBlocks">${blocks}</div>
+      <div class="divider"></div>
+      <div class="row-flex">
+        <input id="newActName" placeholder="ชื่อกิจกรรมใหม่" style="width:260px">
+        <button class="btn ghost" onclick="addNewActivityBlock()">+ เพิ่มกิจกรรมใหม่</button>
+      </div>
+      <div class="divider"></div>
+      <button class="btn" onclick="saveAllCriteria()">บันทึกเกณฑ์ทั้งหมด</button>
+    </div>
+    <div class="card">
+      <h2>ขยายจำนวนข้อที่รองรับ</h2>
+      <p class="mut" style="margin-bottom:12px">ใช้เมื่อต้องการใส่ข้อคำถามเกิน ${cap} ข้อ ระบบจะแทรกคอลัมน์เพิ่มในชีต Responses โดยเลื่อนคอลัมน์ Liked/Advice ไปพร้อมกัน <b>ข้อมูลเดิมไม่หาย</b> — แนะนำทำสำเนาชีตไว้ก่อนเพื่อความสบายใจ</p>
+      <div class="row-flex">
+        <div class="field"><label>ขยายเป็น (ข้อ)</label><input type="number" id="expandTarget" value="${Math.max(cap+5, 15)}" min="${cap+1}" max="50" style="width:100px"></div>
+        <button class="btn ghost" onclick="doExpandColumns()">ขยายคอลัมน์</button>
+      </div>
+    </div>
+  `;
+}
+function doExpandColumns(){
+  const target=document.getElementById('expandTarget').value;
+  if(!confirm('ขยายคอลัมน์คะแนนในชีต Responses เป็น '+target+' ข้อ?\n\nข้อมูลเดิมจะไม่หาย แต่แนะนำให้ทำสำเนาชีตไว้ก่อน')) return;
+  adminPost('adminExpandColumns',{target:target}).then(d=>{
+    if(d.ok){ toast(d.message||'ขยายเรียบร้อย ✓'); refreshData().then(renderCriteria); }
+    else toast(d.error||'ขยายไม่สำเร็จ',true);
+  });
+}
+function addCritRow(btn){
+  const block=btn.closest('.activity-block');
+  const list=block.querySelector('.critList');
+  const idx=list.children.length;
+  const div=document.createElement('div');
+  div.className='crit-row'; div.dataset.i=idx;
+  div.innerHTML='<span class="idx">'+(idx+1)+'</span><input class="critInput" placeholder="ข้อคำถามใหม่"><button class="btn small danger" onclick="removeCritRow(this)">✕</button>';
+  list.appendChild(div);
+}
+function removeCritRow(btn){
+  const block=btn.closest('.activity-block');
+  btn.closest('.crit-row').remove();
+  block.querySelectorAll('.crit-row').forEach((r,i)=>{ r.dataset.i=i; r.querySelector('.idx').textContent=i+1; });
+  block.querySelector('.ahead span').textContent=block.querySelectorAll('.crit-row').length+' ข้อ';
+}
+function addNewActivityBlock(){
+  const name=document.getElementById('newActName').value.trim();
+  if(!name){ toast('พิมพ์ชื่อกิจกรรมก่อนนะ',true); return; }
+  const exists=[...document.querySelectorAll('.activity-block')].some(b=>b.dataset.act===name);
+  if(exists){ toast('มีกิจกรรมนี้อยู่แล้ว',true); return; }
+  const div=document.createElement('div');
+  div.className='activity-block'; div.dataset.act=name;
+  div.innerHTML='<div class="ahead"><b>'+name+'</b><span class="mut">1 ข้อ</span></div>'+
+    '<div class="critList"><div class="crit-row" data-i="0"><span class="idx">1</span><input class="critInput" placeholder="ข้อคำถามแรก"><button class="btn small danger" onclick="removeCritRow(this)">✕</button></div></div>'+
+    '<button class="btn ghost small" onclick="addCritRow(this)">+ เพิ่มข้อ</button>';
+  document.getElementById('critBlocks').appendChild(div);
+  document.getElementById('newActName').value='';
+}
+function saveAllCriteria(){
+  const cap = DATA.critCapacity || 10;
+  const blocks=[...document.querySelectorAll('.activity-block')];
+  const out=[];
+  let hasEmpty=false, over=null;
+  blocks.forEach(b=>{
+    const act=b.dataset.act;
+    const inputs=[...b.querySelectorAll('.critInput')];
+    if(inputs.length>cap) over=act;
+    inputs.forEach((inp,i)=>{
+      const val=inp.value.trim();
+      if(!val) hasEmpty=true;
+      out.push({activity:act, order:i+1, criterion:val});
+    });
+  });
+  if(hasEmpty){ toast('มีข้อคำถามว่างอยู่ กรอกให้ครบก่อนบันทึก',true); return; }
+  if(over){ toast('"'+over+'" มีข้อเกิน '+cap+' ข้อ — กดขยายคอลัมน์ด้านล่างก่อน',true); return; }
+  adminPost('adminSaveCriteria',{criteria:out}).then(d=>{
+    if(d.ok){ toast('บันทึกเกณฑ์ทั้งหมดแล้ว ✓'); refreshData().then(renderCriteria); } else toast(d.error||'บันทึกไม่สำเร็จ',true);
+  });
+}
+
+function renderActivities(){
+  const rows=DATA.criteria||[];
+  const byAct={};
+  rows.forEach(c=>{ (byAct[c.activity]=byAct[c.activity]||[]).push(c.criterion); });
+  const acts=Object.keys(byAct);
+  let list=acts.map(act=>`<tr data-act="${escAttr(act)}">
+      <td><input value="${escAttr(act)}" class="actNameInput" style="width:340px"></td>
+      <td class="mut">${byAct[act].length} ข้อ</td>
+      <td><button class="btn small danger" onclick="deleteActivity('${escJs(act)}')">ลบกิจกรรมนี้</button></td>
+    </tr>`).join('');
+
+  document.getElementById('main').innerHTML=`
+    <div class="pagehead"><h1>รายชื่อกิจกรรม</h1><p>เปลี่ยนชื่อหรือลบกิจกรรมทั้งชุด (แก้ข้อคำถามรายข้อ ไปที่เมนู "เกณฑ์การประเมิน")</p></div>
+    <div class="card">
+      <table>
+        <thead><tr><th>ชื่อกิจกรรม</th><th>จำนวนเกณฑ์</th><th></th></tr></thead>
+        <tbody id="actTbody">${list||'<tr><td colspan="3" class="mut">ยังไม่มีข้อมูล</td></tr>'}</tbody>
+      </table>
+      <div class="divider"></div>
+      <button class="btn" onclick="saveActivityRenames()">บันทึกการเปลี่ยนชื่อ</button>
+      <p class="mut" style="margin-top:10px">คำเตือน: การลบกิจกรรมจะลบเกณฑ์ทั้งหมดของกิจกรรมนั้นออกจากระบบทันที (ข้อมูลคะแนนเก่าที่เคยบันทึกไปแล้วจะยังอยู่ในชีต Responses ไม่หาย)</p>
+    </div>
+  `;
+}
+function deleteActivity(act){
+  if(!confirm('ลบกิจกรรม "'+act+'" ทั้งหมด (รวมเกณฑ์ทุกข้อ)?')) return;
+  const remaining=(DATA.criteria||[]).filter(c=>c.activity!==act);
+  adminPost('adminSaveCriteria',{criteria:remaining}).then(d=>{
+    if(d.ok){ toast('ลบแล้ว ✓'); refreshData().then(renderActivities); } else toast(d.error||'ลบไม่สำเร็จ',true);
+  });
+}
+function saveActivityRenames(){
+  const trs=[...document.querySelectorAll('#actTbody tr')];
+  const renameMap={};
+  trs.forEach(tr=>{ const oldAct=tr.dataset.act; const newAct=tr.querySelector('.actNameInput').value.trim(); if(newAct) renameMap[oldAct]=newAct; });
+  const updated=(DATA.criteria||[]).map(c=>({activity: renameMap[c.activity]||c.activity, order:c.order, criterion:c.criterion}));
+  adminPost('adminSaveCriteria',{criteria:updated}).then(d=>{
+    if(d.ok){ toast('บันทึกแล้ว ✓'); refreshData().then(renderActivities); } else toast(d.error||'บันทึกไม่สำเร็จ',true);
+  });
+}
+
+function renderSchedule(){
+  const rows=DATA.schedule||[];
+  let trs=rows.map(r=>`<tr data-row="${r.row}">
+      <td><input type="date" value="${r.date}" class="s-date"></td>
+      <td><input value="${escAttr(r.major)}" class="s-major" style="width:200px"></td>
+      <td><input value="${escAttr(r.presenter)}" class="s-presenter" style="width:160px"></td>
+      <td><input value="${escAttr(r.minor)}" class="s-minor" style="width:160px"></td>
+      <td>
+        <button class="btn small" onclick="saveScheduleRow(${r.row})">บันทึก</button>
+        <button class="btn small danger" onclick="deleteScheduleRow(${r.row})">ลบ</button>
+      </td>
+    </tr>`).join('');
+
+  document.getElementById('main').innerHTML=`
+    <div class="pagehead"><h1>ตารางกิจกรรมรายสัปดาห์</h1><p>ใช้สำหรับแจ้งเตือนอัตโนมัติทุกวันจันทร์เช้าเข้ากลุ่ม LINE (ต้องตั้ง Time-driven Trigger แยกใน Apps Script)</p></div>
+    <div class="card">
+      <h2>ตารางทั้งหมด (${rows.length} รายการ)</h2>
+      <table>
+        <thead><tr><th>วันที่</th><th>กิจกรรม (Major)</th><th>ผู้นำเสนอ</th><th>กิจกรรม (Minor)</th><th></th></tr></thead>
+        <tbody id="schTbody">${trs||'<tr><td colspan="5" class="mut">ยังไม่มีข้อมูล</td></tr>'}</tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2>เพิ่มแถวใหม่</h2>
+      <div class="row-flex">
+        <div class="field"><label>วันที่</label><input type="date" id="newSchDate"></div>
+        <div class="field"><label>กิจกรรม (Major)</label><input id="newSchMajor" style="width:200px"></div>
+        <div class="field"><label>ผู้นำเสนอ</label><input id="newSchPresenter" style="width:160px"></div>
+        <div class="field"><label>กิจกรรม (Minor)</label><input id="newSchMinor" style="width:160px"></div>
+        <button class="btn" onclick="addScheduleRow()">+ เพิ่ม</button>
+      </div>
+    </div>
+  `;
+}
+function saveScheduleRow(row){
+  const tr=document.querySelector('#schTbody tr[data-row="'+row+'"]');
+  const date=tr.querySelector('.s-date').value;
+  const major=tr.querySelector('.s-major').value.trim();
+  const presenter=tr.querySelector('.s-presenter').value.trim();
+  const minor=tr.querySelector('.s-minor').value.trim();
+  if(!date){ toast('เลือกวันที่ก่อนนะ',true); return; }
+  adminPost('adminSaveSchedule',{row:row,date:date,major:major,presenter:presenter,minor:minor}).then(d=>{
+    if(d.ok){ toast('บันทึกแล้ว ✓'); refreshData().then(renderSchedule); } else toast(d.error||'บันทึกไม่สำเร็จ',true);
+  });
+}
+function deleteScheduleRow(row){
+  if(!confirm('ลบแถวนี้?')) return;
+  adminPost('adminDeleteScheduleRow',{row:row}).then(d=>{
+    if(d.ok){ toast('ลบแล้ว ✓'); refreshData().then(renderSchedule); } else toast(d.error||'ลบไม่สำเร็จ',true);
+  });
+}
+function addScheduleRow(){
+  const date=document.getElementById('newSchDate').value;
+  const major=document.getElementById('newSchMajor').value.trim();
+  const presenter=document.getElementById('newSchPresenter').value.trim();
+  const minor=document.getElementById('newSchMinor').value.trim();
+  if(!date){ toast('เลือกวันที่ก่อนนะ',true); return; }
+  adminPost('adminSaveSchedule',{date:date,major:major,presenter:presenter,minor:minor}).then(d=>{
+    if(d.ok){ toast('เพิ่มแล้ว ✓'); refreshData().then(renderSchedule); } else toast(d.error||'เพิ่มไม่สำเร็จ',true);
+  });
+}
+
+function renderTracks(){
+  const rows=DATA.tracks||[];
+  const byTrack={};
+  rows.forEach(t=>{ if(!byTrack[t.trackType]) byTrack[t.trackType]={label:t.label,titleLabel:t.titleLabel,multi:t.multi,items:t.items,itemLabel:t.itemLabel,milestones:[]}; byTrack[t.trackType].milestones.push(t.milestone); });
+  const tts=Object.keys(byTrack);
+
+  let blocks=tts.map(tt=>{
+    const cfg=byTrack[tt];
+    const mrows=cfg.milestones.map((m,i)=>`<div class="milestone-row" data-i="${i}">
+        <span class="idx" style="width:22px;text-align:center;color:var(--ink-faint);font-size:12px">${i+1}</span>
+        <input value="${escAttr(m)}" class="msInput">
+        <button class="btn small danger" onclick="removeMsRow(this)">✕</button>
+      </div>`).join('');
+    return `<div class="track-block" data-tt="${escAttr(tt)}">
+      <div class="theadrow">
+        <div class="field"><label>Track key</label><input value="${escAttr(tt)}" class="ttKey" style="width:120px" readonly></div>
+        <div class="field"><label>ชื่อที่แสดง (Label)</label><input value="${escAttr(cfg.label)}" class="ttLabel" style="width:220px"></div>
+        <div class="field"><label>ชื่อช่องกรอกหัวข้อ</label><input value="${escAttr(cfg.titleLabel)}" class="ttTitleLabel" style="width:160px"></div>
+        <div class="field"><label>หลายชิ้น?</label><label class="checkline" style="padding:8px 0"><input type="checkbox" class="ttMulti" ${cfg.multi?'checked':''}> Multi</label></div>
+        <div class="field"><label>จำนวนชิ้น</label><input type="number" value="${cfg.items||1}" class="ttItems" style="width:70px"></div>
+        <div class="field"><label>ป้ายชิ้น (เช่น เคสที่)</label><input value="${escAttr(cfg.itemLabel||'')}" class="ttItemLabel" style="width:110px"></div>
+      </div>
+      <div class="mut" style="margin-bottom:8px">Milestones (${cfg.milestones.length} ขั้น)</div>
+      <div class="msList">${mrows}</div>
+      <button class="btn ghost small" onclick="addMsRow(this)">+ เพิ่มขั้น</button>
+    </div>`;
+  }).join('');
+
+  document.getElementById('main').innerHTML=`
+    <div class="pagehead"><h1>Progress Milestones</h1><p>แก้ขั้นตอนของ Research / Home Visit / Community / CQI ที่แพทย์ประจำบ้านใช้ติดตามความก้าวหน้าตนเอง</p></div>
+    <div class="card">
+      <p class="mut" style="margin-bottom:14px">คำเตือน: ถ้าสลับลำดับหรือลบขั้นกลางออก ข้อมูล progress ที่บันทึกไปแล้วอาจแสดงผลคลาดเคลื่อน (เพราะระบบเก็บเป็นเลขลำดับขั้น) แนะนำให้เพิ่มขั้นใหม่ต่อท้ายแทนการแทรกตรงกลางถ้ามีคนเริ่มใช้แล้ว</p>
+      <div id="trackBlocks">${blocks}</div>
+      <div class="divider"></div>
+      <button class="btn" onclick="saveAllTracks()">บันทึก Milestones ทั้งหมด</button>
+    </div>
+  `;
+}
+function addMsRow(btn){
+  const block=btn.closest('.track-block');
+  const list=block.querySelector('.msList');
+  const idx=list.children.length;
+  const div=document.createElement('div');
+  div.className='milestone-row'; div.dataset.i=idx;
+  div.innerHTML='<span class="idx" style="width:22px;text-align:center;color:var(--ink-faint);font-size:12px">'+(idx+1)+'</span><input class="msInput" placeholder="ขั้นใหม่"><button class="btn small danger" onclick="removeMsRow(this)">✕</button>';
+  list.appendChild(div);
+}
+function removeMsRow(btn){
+  const block=btn.closest('.track-block');
+  btn.closest('.milestone-row').remove();
+  block.querySelectorAll('.milestone-row').forEach((r,i)=>{ r.dataset.i=i; r.querySelector('.idx').textContent=i+1; });
+}
+function saveAllTracks(){
+  const blocks=[...document.querySelectorAll('.track-block')];
+  const out=[]; let hasEmpty=false;
+  blocks.forEach(b=>{
+    const tt=b.dataset.tt;
+    const label=b.querySelector('.ttLabel').value.trim();
+    const titleLabel=b.querySelector('.ttTitleLabel').value.trim();
+    const multi=b.querySelector('.ttMulti').checked;
+    const items=b.querySelector('.ttItems').value;
+    const itemLabel=b.querySelector('.ttItemLabel').value.trim();
+    const ms=[...b.querySelectorAll('.msInput')];
+    ms.forEach((inp,i)=>{
+      const val=inp.value.trim();
+      if(!val) hasEmpty=true;
+      out.push({trackType:tt,label:label,titleLabel:titleLabel,multi:multi,items:items,itemLabel:itemLabel,order:i+1,milestone:val});
+    });
+  });
+  if(hasEmpty){ toast('มีขั้นที่ว่างอยู่ กรอกให้ครบก่อนบันทึก',true); return; }
+  adminPost('adminSaveTracks',{tracks:out}).then(d=>{
+    if(d.ok){ toast('บันทึกแล้ว ✓'); refreshData().then(renderTracks); } else toast(d.error||'บันทึกไม่สำเร็จ',true);
+  });
+}
+
+function renderStats(){
+  const s=DATA.stats||{};
+  const fRows=(s.facultyStats||[]).map(f=>`<tr><td>${f.name}</td><td class="mono">${f.count}</td></tr>`).join('');
+  document.getElementById('main').innerHTML=`
+    <div class="pagehead"><h1>สถิติ / ข้อมูลดิบ</h1><p>ภาพรวมการใช้งานระบบ — สำหรับข้อมูลละเอียดกว่านี้ เปิด Google Sheet โดยตรง</p></div>
+    <div class="stat-grid">
+      <div class="stat"><b class="mono">${s.totalResponses||0}</b><span>การประเมินทั้งหมด</span></div>
+      <div class="stat"><b class="mono">${s.totalMembers||0}</b><span>คนที่ลงทะเบียน</span></div>
+      <div class="stat"><b class="mono">${s.totalResidents||0}</b><span>แพทย์ประจำบ้านที่ใช้งาน</span></div>
+    </div>
+    <div class="card">
+      <h2>จำนวนครั้งที่อาจารย์แต่ละคนเข้าประเมิน</h2>
+      <table>
+        <thead><tr><th>ชื่ออาจารย์ (ตามที่บันทึกตอนประเมิน)</th><th>จำนวนครั้ง</th></tr></thead>
+        <tbody>${fRows||'<tr><td colspan="2" class="mut">ยังไม่มีข้อมูล</td></tr>'}</tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2>แพทย์ประจำบ้านที่ยังไม่เคยถูกประเมินเลย</h2>
+      ${(s.neverEvaluated&&s.neverEvaluated.length)?`<p>${s.neverEvaluated.join(', ')}</p>`:'<p class="mut">ทุกคนเคยถูกประเมินแล้ว</p>'}
+    </div>
+  `;
+}
+
+function renderDanger(){
+  document.getElementById('main').innerHTML=`
+    <div class="pagehead"><h1>ล้างข้อมูลทดสอบ</h1><p>ใช้หลังทดลองระบบเสร็จแล้ว อยากเริ่มนับข้อมูลใหม่ — action นี้ลบถาวร กู้คืนไม่ได้</p></div>
+    <div class="card">
+      <h2>เลือกสิ่งที่จะล้าง</h2>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+        <label class="checkline"><input type="checkbox" id="clearResponses"> <b>Responses</b> — ผลการประเมินกลุ่ม A ทั้งหมด</label>
+        <label class="checkline"><input type="checkbox" id="clearMembers"> <b>Members</b> — การผูก LINE userId กับชื่อ (ทุกคนต้องเลือกชื่อใหม่ตอนเปิดแอปครั้งถัดไป)</label>
+        <label class="checkline"><input type="checkbox" id="clearProgress"> <b>Progress</b> — ข้อมูล Progression tracker ทั้งหมด</label>
+      </div>
+      <button class="btn danger" onclick="doClearTestData()">ล้างข้อมูลที่เลือก</button>
+      <p class="mut" style="margin-top:10px">แนะนำ: ทำสำเนาชีต (File → Make a copy) ไว้ก่อนกดล้าง เผื่ออยากดูข้อมูลทดสอบย้อนหลัง</p>
+    </div>
+  `;
+}
+function doClearTestData(){
+  const targets=[];
+  if(document.getElementById('clearResponses').checked) targets.push('responses');
+  if(document.getElementById('clearMembers').checked) targets.push('members');
+  if(document.getElementById('clearProgress').checked) targets.push('progress');
+  if(!targets.length){ toast('เลือกอย่างน้อย 1 อย่างก่อนนะ',true); return; }
+  if(!confirm('ยืนยันล้างข้อมูล: '+targets.join(', ')+'\n\nการกระทำนี้ย้อนกลับไม่ได้')) return;
+  adminPost('adminClearTestData',{targets:targets}).then(d=>{
+    if(d.ok){ toast('ล้างข้อมูลแล้ว ✓ ('+d.cleared.join(', ')+')'); refreshData(); }
+    else toast(d.error||'ล้างไม่สำเร็จ',true);
+  });
+}
+
+function escAttr(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+/** สำหรับค่าที่ถูกวางลงใน "สตริง JS" ภายใน onclick — ต้อง escape \ และ ' ด้วย
+ *  (escAttr อย่างเดียวไม่พอ เพราะ ' ไม่ใช่อักขระพิเศษของ HTML แต่เป็นตัวปิดสตริงของ JS) */
+function escJs(s){ return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+</script>
+</body>
+</html>
