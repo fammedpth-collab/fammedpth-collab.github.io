@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — ความก้าวหน้าแพทย์ประจำบ้าน รพ.ปทุมธานี</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3F5F4;--surface:#FFFFFF;--surface-2:#F7FAF8;--ink:#16261F;--ink-soft:#5B6F68;--ink-faint:#93A39D;
+    --primary:#13876E;--primary-deep:#0C5E4D;--primary-soft:#DCEEE8;--line:#E1E9E5;
+    --warn:#C2542F;--warn-soft:#FCE5DC;
+    --shadow:0 1px 2px rgba(16,38,31,.05),0 4px 16px rgba(16,38,31,.06);
+    --radius:12px;
+    /* สีประจำชั้นปี — ใช้ชุดเดียวกันทั้งหน้า */
+    --y1:#C97B1E; --y1-soft:#FBEEDC;
+    --y2:#13876E; --y2-soft:#DCEEE8;
+    --y3:#4A5FC1; --y3-soft:#E3E7FA;
+    --ya:#8C9A95; --ya-soft:#ECF0EE;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'IBM Plex Sans Thai',sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+  .mono{font-family:'IBM Plex Mono',monospace;font-feature-settings:"tnum"}
+  button,input,select{font-family:inherit;font-size:14px}
+  button{cursor:pointer;border:none}
+  input{border:1.5px solid var(--line);border-radius:8px;padding:9px 11px;background:#fff;color:var(--ink);outline:none}
+  input:focus{border-color:var(--primary)}
+
+  /* ---------- gate ---------- */
+  #gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px}
+  .gate-card{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:30px 26px}
+  .gate-badge{width:46px;height:46px;border-radius:12px;background:var(--primary-deep);color:#fff;display:grid;place-items:center;font-weight:700;font-size:17px;margin-bottom:15px}
+  .gate-card h1{font-size:18.5px;font-weight:600;margin-bottom:5px}
+  .gate-card p{font-size:13px;color:var(--ink-soft);margin-bottom:18px}
+  .gate-card input{width:100%;margin-bottom:11px}
+  .gate-card button{width:100%;background:var(--primary);color:#fff;border-radius:8px;padding:11px;font-weight:600}
+  .gate-err{color:var(--warn);font-size:12.5px;margin-top:8px;min-height:17px}
+
+  /* ---------- shell ---------- */
+  #app{display:none}
+  .topbar{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .topbar-in{max-width:1160px;margin:0 auto;padding:13px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .title b{font-size:15.5px;font-weight:600;display:block;line-height:1.3}
+  .title span{font-size:11.5px;color:var(--ink-faint)}
+  .spacer{flex:1}
+  .seg{display:flex;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+  .seg button{background:none;color:var(--ink-soft);font-size:13px;font-weight:500;padding:7px 14px;border-radius:7px}
+  .seg button.on{background:var(--ink);color:#fff;font-weight:600}
+  .icon-btn{background:var(--surface-2);border:1px solid var(--line);color:var(--ink-soft);border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:500}
+  .icon-btn:hover{border-color:var(--primary);color:var(--primary-deep)}
+
+  .filterbar{max-width:1160px;margin:0 auto;padding:14px 20px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .chip{border:1.5px solid var(--line);background:#fff;color:var(--ink-soft);border-radius:999px;padding:6px 14px;font-size:12.5px;font-weight:500;display:inline-flex;align-items:center;gap:7px}
+  .chip .dot{width:8px;height:8px;border-radius:50%;background:currentColor;opacity:.85}
+  .chip.on{color:#fff;font-weight:600}
+  .chip.on.y-R1{background:var(--y1);border-color:var(--y1)}
+  .chip.on.y-R2{background:var(--y2);border-color:var(--y2)}
+  .chip.on.y-R3{background:var(--y3);border-color:var(--y3)}
+  .chip.on.y-alum,.chip.on.y-all{background:var(--ink);border-color:var(--ink)}
+  .chip.y-R1{color:var(--y1)} .chip.y-R2{color:var(--y2)} .chip.y-R3{color:var(--y3)} .chip.y-alum{color:var(--ya)}
+  .search{margin-left:auto;min-width:180px}
+
+  .wrap{max-width:1160px;margin:0 auto;padding:18px 20px 60px}
+
+  /* ---------- year cards ---------- */
+  .ygrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+  .ycard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .ycard .strip{height:5px}
+  .ycard .body{padding:18px}
+  .ycard h2{font-size:17px;font-weight:600;display:flex;align-items:center;gap:9px}
+  .ycard h2 .badge{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px}
+  .ynums{display:flex;gap:18px;margin:15px 0 6px;flex-wrap:wrap}
+  .num{min-width:66px}
+  .num b{font-size:24px;font-weight:600;line-height:1.1;display:block}
+  .num span{font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em}
+  .ybar{margin-top:12px}
+  .barlabel{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-faint);margin-bottom:5px}
+  .track{height:8px;background:var(--surface-2);border-radius:999px;overflow:hidden}
+  .track i{display:block;height:100%;border-radius:999px;transition:width .5s ease}
+  .ylist{margin-top:16px;border-top:1px dashed var(--line);padding-top:12px;display:flex;flex-direction:column;gap:9px}
+  .miniperson{display:flex;align-items:center;gap:10px;font-size:13px;cursor:pointer;border-radius:8px;padding:3px 4px}
+  .miniperson:hover{background:var(--surface-2)}
+  .miniperson .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .miniperson .mtrack{width:74px;height:6px;background:var(--surface-2);border-radius:999px;overflow:hidden;flex-shrink:0}
+  .miniperson .mtrack i{display:block;height:100%}
+  .miniperson .sc{font-size:12.5px;font-weight:600;width:34px;text-align:right;flex-shrink:0}
+  .untouched{margin-top:14px;font-size:12px;color:var(--warn);background:var(--warn-soft);border-radius:9px;padding:9px 11px;line-height:1.5}
+
+  /* ---------- roster strip (รายคน) ---------- */
+  .roster{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .rhead,.rrow{display:grid;grid-template-columns:1.6fr 68px 1.1fr 1.4fr 56px;gap:14px;align-items:center;padding:12px 18px}
+  .rhead{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);border-bottom:1px solid var(--line);background:var(--surface-2)}
+  .rrow{border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s}
+  .rrow:last-child{border-bottom:none}
+  .rrow:hover{background:var(--surface-2)}
+  .who{display:flex;align-items:center;gap:10px;min-width:0}
+  .yrdot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .who .nm{font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .yrtag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;justify-self:start}
+  .scorebar{display:flex;gap:3px;align-items:center}
+  .scorebar .pips{display:flex;gap:3px;flex:1}
+  .scorebar .pip{flex:1;height:9px;border-radius:2px;background:var(--surface-2)}
+  .scorebar .val{font-size:13px;font-weight:600;width:34px;text-align:right}
+  .tracks4{display:flex;gap:5px}
+  .tracks4 .t{flex:1}
+  .tracks4 .t .tb{height:9px;background:var(--surface-2);border-radius:3px;overflow:hidden}
+  .tracks4 .t .tb i{display:block;height:100%}
+  .tracks4 .t .tl{font-size:9.5px;color:var(--ink-faint);margin-top:3px;text-align:center;letter-spacing:.02em}
+  .cnt{font-size:12.5px;color:var(--ink-soft);text-align:right}
+  .cnt.zero{color:var(--warn)}
+
+  /* ---------- detail sheet ---------- */
+  #sheetbg{position:fixed;inset:0;background:rgba(16,38,31,.45);z-index:40;display:none}
+  #sheet{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--bg);z-index:50;overflow-y:auto;display:none;box-shadow:-8px 0 40px rgba(16,38,31,.18)}
+  .sheethead{position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--line);padding:18px 22px;z-index:2}
+  .sheethead h2{font-size:18px;font-weight:600}
+  .sheethead .sub{font-size:12.5px;color:var(--ink-soft);margin-top:3px}
+  .closebtn{position:absolute;top:16px;right:18px;background:var(--surface-2);border-radius:8px;padding:6px 11px;font-size:13px;color:var(--ink-soft)}
+  .sheetbody{padding:18px 22px 50px}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:14px}
+  .panel h3{font-size:13px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;margin-bottom:13px}
+  .statrow{display:flex;gap:16px;flex-wrap:wrap}
+  .crit{margin-bottom:11px}
+  .crit .cl{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;gap:10px}
+  .crit .cl span:last-child{font-weight:600;flex-shrink:0}
+  .steps{display:flex;gap:2px;margin:7px 0 4px}
+  .steps i{flex:1;height:7px;border-radius:2px;background:var(--surface-2)}
+  .tkitem{padding:11px 0;border-bottom:1px dashed var(--line)}
+  .tkitem:last-child{border-bottom:none}
+  .tkitem .th{display:flex;justify-content:space-between;font-size:13px;font-weight:500;gap:10px}
+  .tkitem .tt{font-size:12px;color:var(--ink-soft);margin-top:2px}
+  .tkitem .ts{font-size:12px;color:var(--ink-faint);margin-top:3px}
+  .actgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+  .actcell{background:var(--surface-2);border-radius:8px;padding:8px 10px;font-size:12px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+  .actcell.none{color:var(--ink-faint);background:transparent;border:1px dashed var(--line)}
+  .actcell b{font-weight:600}
+  .cmt{border-left:3px solid var(--line);padding:2px 0 2px 11px;margin-bottom:13px;font-size:12.5px}
+  .cmt.teacher{border-left-color:var(--primary)}
+  .cmt .meta{font-size:11px;color:var(--ink-faint);margin-bottom:3px}
+  .cmt .lk{color:var(--primary-deep)}
+  .cmt .ad{color:var(--ink-soft);margin-top:2px}
+  .empty{color:var(--ink-faint);font-size:13px;text-align:center;padding:26px 0}
+
+  @media (max-width:760px){
+    .rhead{display:none}
+    .rrow{grid-template-columns:1fr auto;gap:8px 12px;padding:14px 16px}
+    .rrow .yrtag{grid-column:2;grid-row:1;justify-self:end}
+    .rrow .scorebar{grid-column:1/-1}
+    .rrow .tracks4{grid-column:1/-1}
+    .rrow .cnt{grid-column:1/-1;text-align:left;font-size:12px}
+    .topbar-in{padding:11px 15px;gap:10px}
+    .search{width:100%;margin-left:0}
+    .wrap,.filterbar{padding-left:15px;padding-right:15px}
+    #sheet{width:100%}
+  }
+  @media print{
+    .topbar,.filterbar,.icon-btn,#sheetbg{display:none!important}
+    body{background:#fff}
+    .ycard,.roster{box-shadow:none;break-inside:avoid}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-card">
+    <div class="gate-badge">PT</div>
+    <h1>Dashboard ความก้าวหน้า</h1>
+    <p>สำหรับอาจารย์ — ดูภาพรวมการประเมินและ progress ของแพทย์ประจำบ้าน</p>
+    <input type="password" id="pw" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">เข้าดูข้อมูล</button>
+    <div class="gate-err" id="gateErr"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar"><div class="topbar-in">
+    <div class="title"><b>ความก้าวหน้าแพทย์ประจำบ้าน</b><span id="stamp"></span></div>
+    <div class="spacer"></div>
+    <div class="seg">
+      <button id="tabYear" class="on" onclick="setView('year')">รายชั้นปี</button>
+      <button id="tabPerson" onclick="setView('person')">รายคน</button>
+    </div>
+    <button class="icon-btn" onclick="loadData(true)">รีเฟรช</button>
+    <button class="icon-btn" onclick="exportCSV()">CSV</button>
+  </div></div>
+
+  <div class="filterbar" id="filters"></div>
+  <div class="wrap" id="view"><div class="empty">กำลังโหลด…</div></div>
+</div>
+
+<div id="sheetbg" onclick="closeSheet()"></div>
+<div id="sheet"></div>
+
+<script>
+/* ============ ตั้งค่า — ใช้ URL เดียวกับ admin.html ============ */
+const API = 'https://script.google.com/macros/s/AKfycbwM5gNNA68y5b8Yx_E-uFFey9-YNkZ6zRxMTfQylxIJnKwihz-DADGkEWR-4mooTzBMgA/exec';
+/* ============================================================== */
+
+let PW='', DATA=null, VIEW='year', YEAR='all', Q='';
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function n1(x){ return (x==null||isNaN(x)) ? '–' : Number(x).toFixed(1); }
+
+/* คลาสสีตามชั้นปี — R1/R2/R3/ศิษย์เก่า */
+function ycls(y){
+  if(y==='R1') return 'y-R1'; if(y==='R2') return 'y-R2'; if(y==='R3') return 'y-R3';
+  return 'y-alum';
+}
+function ycol(y){
+  return getComputedStyle(document.documentElement).getPropertyValue(
+    y==='R1'?'--y1': y==='R2'?'--y2': y==='R3'?'--y3':'--ya').trim();
+}
+function ysoft(y){
+  return getComputedStyle(document.documentElement).getPropertyValue(
+    y==='R1'?'--y1-soft': y==='R2'?'--y2-soft': y==='R3'?'--y3-soft':'--ya-soft').trim();
+}
+
+/* ---------- login ---------- */
+function doLogin(){
+  const pw=document.getElementById('pw').value;
+  if(!pw){ document.getElementById('gateErr').textContent='ใส่รหัสผ่านก่อน'; return; }
+  PW=pw; document.getElementById('gateErr').textContent='กำลังตรวจสอบ…';
+  fetch(API+'?action=dashboard&password='+encodeURIComponent(PW)).then(r=>r.json()).then(d=>{
+    if(!d || d.ok===false){ document.getElementById('gateErr').textContent='รหัสผ่านไม่ถูกต้อง'; PW=''; return; }
+    DATA=d;
+    document.getElementById('gate').style.display='none';
+    document.getElementById('app').style.display='block';
+    try{ sessionStorage.setItem('dashpw',PW); }catch(e){}
+    renderAll();
+  }).catch(()=>{ document.getElementById('gateErr').textContent='เชื่อมต่อไม่สำเร็จ ลองใหม่อีกครั้ง'; });
+}
+function loadData(){
+  document.getElementById('view').innerHTML='<div class="empty">กำลังโหลด…</div>';
+  fetch(API+'?action=dashboard&password='+encodeURIComponent(PW)).then(r=>r.json()).then(d=>{
+    if(d && d.ok!==false){ DATA=d; renderAll(); }
+    else document.getElementById('view').innerHTML='<div class="empty">โหลดข้อมูลไม่สำเร็จ</div>';
+  }).catch(()=>{ document.getElementById('view').innerHTML='<div class="empty">เชื่อมต่อไม่สำเร็จ</div>'; });
+}
+
+/* ---------- filters ---------- */
+function setView(v){
+  VIEW=v;
+  document.getElementById('tabYear').className = v==='year'?'on':'';
+  document.getElementById('tabPerson').className = v==='person'?'on':'';
+  render();
+}
+function setYear(y){ YEAR=y; renderFilters(); render(); }
+function setQ(v){ Q=v.trim(); render(); }
+
+function renderFilters(){
+  const f=document.getElementById('filters');
+  let h='<button class="chip y-all'+(YEAR==='all'?' on':'')+'" onclick="setYear(\'all\')">ทุกชั้นปี</button>';
+  DATA.years.forEach(y=>{
+    h+='<button class="chip '+ycls(y)+(YEAR===y?' on':'')+'" onclick="setYear(\''+esc(y)+'\')">'+
+       '<i class="dot"></i>'+esc(y)+'</button>';
+  });
+  h+='<input class="search" placeholder="ค้นหาชื่อ…" value="'+esc(Q)+'" oninput="setQ(this.value)">';
+  f.innerHTML=h;
+}
+function renderAll(){
+  document.getElementById('stamp').textContent='ข้อมูล ณ '+DATA.generatedAt+' · ประเมินทั้งหมด '+DATA.totalEvals+' ครั้ง';
+  renderFilters(); render();
+}
+function filtered(){
+  return DATA.residents.filter(r=>
+    (YEAR==='all'||r.year===YEAR) && (!Q || r.name.indexOf(Q)>=0));
+}
+function render(){ VIEW==='year' ? renderYearView() : renderPersonView(); }
+
+/* ---------- มุมมองรายชั้นปี ---------- */
+function renderYearView(){
+  const groups=DATA.yearSummary.filter(g=>(YEAR==='all'||g.year===YEAR) && g.n>0);
+  if(!groups.length){ document.getElementById('view').innerHTML='<div class="empty">ไม่มีข้อมูลในชั้นปีนี้</div>'; return; }
+  let h='<div class="ygrid">';
+  groups.forEach(g=>{
+    const col=ycol(g.year), soft=ysoft(g.year);
+    const people=DATA.residents.filter(r=>r.year===g.year && (!Q||r.name.indexOf(Q)>=0));
+    h+='<div class="ycard"><div class="strip" style="background:'+col+'"></div><div class="body">';
+    h+='<h2>'+esc(g.year)+'<span class="badge" style="background:'+soft+';color:'+col+'">'+g.n+' คน</span></h2>';
+    h+='<div class="ynums">'+
+       '<div class="num"><b style="color:'+col+'">'+n1(g.avg)+'</b><span>คะแนนเฉลี่ย</span></div>'+
+       '<div class="num"><b>'+g.progressPct+'%</b><span>progress</span></div>'+
+       '<div class="num"><b>'+g.evalCount+'</b><span>ครั้งที่ประเมิน</span></div>'+
+       '</div>';
+    h+='<div class="ybar"><div class="barlabel"><span>ความคืบหน้างานทั้ง 4 อย่าง</span><span>'+g.progressPct+'%</span></div>'+
+       '<div class="track"><i style="width:'+g.progressPct+'%;background:'+col+'"></i></div></div>';
+    h+='<div class="ylist">';
+    people.forEach(r=>{
+      const pctScore = r.avg ? Math.round(r.avg/5*100) : 0;
+      h+='<div class="miniperson" onclick="openDetail(\''+esc(r.name).replace(/'/g,"\\'")+'\')">'+
+         '<span class="nm">'+esc(r.name)+'</span>'+
+         '<span class="mtrack" title="progress '+r.progressPct+'%"><i style="width:'+r.progressPct+'%;background:'+col+'"></i></span>'+
+         '<span class="sc" style="color:'+(r.evalCount?col:'var(--ink-faint)')+'">'+n1(r.avg)+'</span>'+
+         '</div>';
+    });
+    h+='</div>';
+    if(g.untouched && g.untouched.length)
+      h+='<div class="untouched"><b>ยังไม่เคยประเมิน:</b> '+g.untouched.map(esc).join(' · ')+'</div>';
+    h+='</div></div>';
+  });
+  h+='</div>';
+  document.getElementById('view').innerHTML=h;
+}
+
+/* ---------- มุมมองรายคน ---------- */
+function renderPersonView(){
+  const list=filtered();
+  if(!list.length){ document.getElementById('view').innerHTML='<div class="empty">ไม่พบแพทย์ประจำบ้านตามเงื่อนไข</div>'; return; }
+  const tkeys=Object.keys(DATA.tracksConfig);
+  let h='<div class="roster"><div class="rhead">'+
+        '<div>ชื่อ</div><div>ชั้นปี</div><div>คะแนนเฉลี่ย</div><div>ความคืบหน้างาน</div><div>ประเมิน</div></div>';
+  list.forEach(r=>{
+    const col=ycol(r.year), soft=ysoft(r.year);
+    const full=Math.round(r.avg||0);
+    let pips=''; for(let i=1;i<=5;i++) pips+='<i class="pip" style="background:'+(i<=full?col:'var(--surface-2)')+'"></i>';
+    let tk='';
+    tkeys.forEach(k=>{
+      const t=r.progress[k]||{pct:0,label:k};
+      const short=(DATA.tracksConfig[k].label||k).split(' ')[0];
+      tk+='<div class="t" title="'+esc(DATA.tracksConfig[k].label)+' — '+t.pct+'%">'+
+          '<div class="tb"><i style="width:'+t.pct+'%;background:'+col+'"></i></div>'+
+          '<div class="tl">'+esc(short)+'</div></div>';
+    });
+    h+='<div class="rrow" onclick="openDetail(\''+esc(r.name).replace(/'/g,"\\'")+'\')">'+
+       '<div class="who"><span class="yrdot" style="background:'+col+'"></span><span class="nm">'+esc(r.name)+'</span></div>'+
+       '<div class="yrtag" style="background:'+soft+';color:'+col+'">'+esc(r.year)+'</div>'+
+       '<div class="scorebar"><span class="pips">'+pips+'</span><span class="val" style="color:'+col+'">'+n1(r.avg)+'</span></div>'+
+       '<div class="tracks4">'+tk+'</div>'+
+       '<div class="cnt'+(r.evalCount?'':' zero')+'">'+(r.evalCount? r.evalCount+' ครั้ง' : 'ยังไม่มี')+'</div>'+
+       '</div>';
+  });
+  h+='</div>';
+  document.getElementById('view').innerHTML=h;
+}
+
+/* ---------- รายละเอียดรายคน ---------- */
+function openDetail(name){
+  const r=DATA.residents.filter(x=>x.name===name)[0]; if(!r) return;
+  const col=ycol(r.year), soft=ysoft(r.year);
+  let h='<div class="sheethead"><button class="closebtn" onclick="closeSheet()">ปิด</button>'+
+        '<h2>'+esc(r.name)+'</h2>'+
+        '<div class="sub"><span class="yrtag" style="background:'+soft+';color:'+col+'">'+esc(r.year)+'</span> '+
+        ' เริ่ม R1 ปี '+r.entryYear+' · รุ่นที่ '+r.cohort+
+        (r.lastEval? ' · ประเมินล่าสุด '+esc(r.lastEval):'')+'</div></div><div class="sheetbody">';
+
+  h+='<div class="panel"><h3>คะแนนประเมิน</h3><div class="statrow">'+
+     '<div class="num"><b style="color:'+col+'">'+n1(r.avg)+'</b><span>เฉลี่ยรวม</span></div>'+
+     '<div class="num"><b>'+n1(r.teacher)+'</b><span>จากอาจารย์</span></div>'+
+     '<div class="num"><b>'+n1(r.peer)+'</b><span>จากเพื่อน</span></div>'+
+     '<div class="num"><b>'+r.evalCount+'</b><span>ครั้ง</span></div>'+
+     '</div></div>';
+
+  if(r.criteria.length){
+    h+='<div class="panel"><h3>รายเกณฑ์</h3>';
+    r.criteria.forEach(c=>{
+      const w=Math.round((c.avg/5)*100);
+      h+='<div class="crit"><div class="cl"><span>'+esc(c.name)+' <span style="color:var(--ink-faint)">('+c.n+')</span></span><span>'+n1(c.avg)+'</span></div>'+
+         '<div class="track"><i style="width:'+w+'%;background:'+col+'"></i></div></div>';
+    });
+    h+='</div>';
+  }
+
+  h+='<div class="panel"><h3>ความคืบหน้างาน</h3>';
+  Object.keys(DATA.tracksConfig).forEach(k=>{
+    const cfg=DATA.tracksConfig[k], t=r.progress[k];
+    if(!t) return;
+    h+='<div style="margin-bottom:15px"><div class="cl" style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:2px"><span>'+esc(cfg.label)+'</span><span style="color:'+col+'">'+t.pct+'%</span></div>';
+    t.items.forEach(it=>{
+      let st=''; for(let i=0;i<it.total;i++) st+='<i style="background:'+(i<=it.idx?col:'var(--surface-2)')+'"></i>';
+      h+='<div class="tkitem">'+
+         '<div class="th"><span>'+esc(it.label)+'</span><span style="color:var(--ink-faint);font-weight:400">'+(it.idx>=0?(it.idx+1)+'/'+it.total:'ยังไม่เริ่ม')+'</span></div>'+
+         (it.title? '<div class="tt">'+esc(it.title)+'</div>':'')+
+         '<div class="steps">'+st+'</div>'+
+         (it.step? '<div class="ts">'+esc(it.step)+(it.updated?' · อัปเดต '+esc(it.updated):'')+'</div>':'<div class="ts">ยังไม่ได้บันทึกสถานะ</div>')+
+         '</div>';
+    });
+    h+='</div>';
+  });
+  h+='</div>';
+
+  h+='<div class="panel"><h3>กิจกรรมที่ผ่านมาแล้ว</h3><div class="actgrid">';
+  DATA.activities.forEach(a=>{
+    const c=r.byActivity[a]||0;
+    h+='<div class="actcell'+(c?'':' none')+'"><span>'+esc(a)+'</span><b>'+(c?c:'–')+'</b></div>';
+  });
+  h+='</div></div>';
+
+  h+='<div class="panel"><h3>คำแนะนำล่าสุด</h3>';
+  if(!r.comments.length) h+='<div class="empty" style="padding:10px 0">ยังไม่มีคำแนะนำ</div>';
+  r.comments.forEach(c=>{
+    h+='<div class="cmt '+c.role+'"><div class="meta">'+esc(c.d)+' · '+esc(c.act)+' · '+(c.role==='teacher'?'อาจารย์':'เพื่อน')+'</div>'+
+       (c.like? '<div class="lk">ชอบ: '+esc(c.like)+'</div>':'')+
+       (c.adv?  '<div class="ad">แนะนำ: '+esc(c.adv)+'</div>':'')+'</div>';
+  });
+  h+='</div></div>';
+
+  document.getElementById('sheet').innerHTML=h;
+  document.getElementById('sheet').style.display='block';
+  document.getElementById('sheetbg').style.display='block';
+  document.body.style.overflow='hidden';
+}
+function closeSheet(){
+  document.getElementById('sheet').style.display='none';
+  document.getElementById('sheetbg').style.display='none';
+  document.body.style.overflow='';
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSheet(); });
+
+/* ---------- CSV ---------- */
+function exportCSV(){
+  const tk=Object.keys(DATA.tracksConfig);
+  const head=['ชื่อ','ชั้นปี','เริ่มปี','จำนวนประเมิน','เฉลี่ย','อาจารย์','เพื่อน','progress รวม %']
+             .concat(tk.map(k=>DATA.tracksConfig[k].label+' %'));
+  const lines=[head.join(',')];
+  filtered().forEach(r=>{
+    const row=[r.name,r.year,r.entryYear,r.evalCount,n1(r.avg),n1(r.teacher),n1(r.peer),r.progressPct]
+              .concat(tk.map(k=>(r.progress[k]||{pct:0}).pct));
+    lines.push(row.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(','));
+  });
+  const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='resident-dashboard-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+/* จำรหัสไว้ในแท็บนี้ ไม่ต้องพิมพ์ซ้ำเวลารีเฟรช */
+window.addEventListener('load',()=>{
+  let saved=''; try{ saved=sessionStorage.getItem('dashpw')||''; }catch(e){}
+  if(saved){ document.getElementById('pw').value=saved; doLogin(); }
+});
+</script>
+</body>
+</html>
